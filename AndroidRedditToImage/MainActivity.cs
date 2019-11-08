@@ -34,7 +34,7 @@ namespace AndroidRedditToImage
             if (TryGetRedditUrl(out var redditUrl))
             {
                 var imageUrl = GetImageUrl(redditUrl).Result;
-                var localImageUri = DownloadImage(imageUrl);
+                var localImageUri = DownloadImage(imageUrl).Result;
                 SendImage(localImageUri);
             }
 
@@ -65,7 +65,7 @@ namespace AndroidRedditToImage
 
             res.EnsureSuccessStatusCode();
 
-            var top = JArray.Parse(await res.Content.ReadAsStringAsync());
+            var top = JArray.Parse(await res.Content.ReadAsStringAsync().ConfigureAwait(false));
             res.Dispose();
             /* 
             [ 
@@ -84,7 +84,7 @@ namespace AndroidRedditToImage
             return top[0]["data"]["children"][0]["data"]["url"].Value<string>();
         }
 
-        private Uri DownloadImage(string url)
+        private async Task<Uri> DownloadImage(string url)
         {
             var res = HttpClient.GetAsync(url).Result;
             if (!res.Content.Headers.ContentType.MediaType.StartsWith("image")) throw new Exception("Is not an image");
@@ -95,7 +95,7 @@ namespace AndroidRedditToImage
             var path = $"{GetExternalCacheDirs()[0].AbsolutePath}{File.Separator}reddit_to_image_{Guid.NewGuid()}.{extension}";
             using (var os = new System.IO.FileStream(path, System.IO.FileMode.Create))
             {
-                res.Content.CopyToAsync(os).Wait();
+                await res.Content.CopyToAsync(os).ConfigureAwait(false);
             }
 
             res.Dispose();
